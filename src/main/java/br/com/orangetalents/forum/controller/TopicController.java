@@ -8,6 +8,8 @@ import br.com.orangetalents.forum.repository.TopicRepository;
 import br.com.orangetalents.forum.controller.dto.TopicDTO;
 import br.com.orangetalents.forum.model.Topic;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -16,7 +18,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import javax.persistence.EntityManager;
 import javax.transaction.Transactional;
 import javax.validation.Valid;
 import java.net.URI;
@@ -46,6 +47,7 @@ public class TopicController {
         http://localhost:8080/topi?page=0&size=5&sort=id,desc&sort=creationDate,asc
      */
     @GetMapping
+    @Cacheable(value = "topicsList")
     public Page<TopicDTO> toList(@RequestParam(required = false) String courseName,
                                @PageableDefault(page = 0, size = 5, direction = Sort.Direction.ASC, sort = "creationDate") Pageable pagination){
         Page<Topic> topics;
@@ -63,6 +65,7 @@ public class TopicController {
      */
     @PostMapping
     @Transactional
+    @CacheEvict(value = "topicsList", allEntries = true)
     public ResponseEntity<TopicDTO> toRegister(@RequestBody @Valid TopicForm form, UriComponentsBuilder uriBuilder){
         Topic topic = form.convertToEntity(courseRepository);
         topicRepository.save(topic);
@@ -91,6 +94,7 @@ public class TopicController {
 
     @PutMapping(value = "/{id}")
     @Transactional
+    @CacheEvict(value = "topicsList", allEntries = true)
     public ResponseEntity<TopicDTO> toUpdate(@PathVariable Long id, @RequestBody @Valid UpdateTopicForm form){
         Optional<Topic> optional = topicRepository.findById(id);
 
@@ -103,6 +107,8 @@ public class TopicController {
     }
 
     @DeleteMapping(value = "/{id}")
+    @Transactional
+    @CacheEvict(value = "topicsList", allEntries = true)
     public ResponseEntity<?> toRemove(@PathVariable Long id){
         Optional<Topic> topic = topicRepository.findById(id);
 
